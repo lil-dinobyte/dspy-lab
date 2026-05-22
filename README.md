@@ -56,6 +56,9 @@ Jupyter Lab:
 docker compose up lab ollama
 ```
 
+Los notebooks agregan `src/` al `sys.path` al inicio, asi pueden importar
+`dspy_lab` aunque el kernel arranque desde `notebooks/`.
+
 ## Tests
 
 ```sh
