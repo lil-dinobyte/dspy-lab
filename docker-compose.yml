@@ -1,0 +1,57 @@
+# Solo Jupyter: docker compose up lab ollama
+# Solo API:     docker compose up api ollama
+# Todo:         docker compose up --build
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-data:/root/.ollama
+    ports:
+      - "11434:11434"
+
+  lab:
+    build: .
+    ports:
+      - "8888:8888"
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      UV_PROJECT_ENVIRONMENT: /opt/venv
+      PYTHONPATH: /workspace/src
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      DSPY_LM_BACKEND: ${DSPY_LM_BACKEND:-openai}
+      OPENAI_MODEL: ${OPENAI_MODEL:-openai/gpt-4o-mini}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:latest}
+    depends_on:
+      - ollama
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      UV_PROJECT_ENVIRONMENT: /opt/venv
+      PYTHONPATH: /workspace/src
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      DSPY_LM_BACKEND: ${DSPY_LM_BACKEND:-ollama}
+      OPENAI_MODEL: ${OPENAI_MODEL:-openai/gpt-4o-mini}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:latest}
+    depends_on:
+      - ollama
+    command:
+      - sh
+      - -c
+      - |
+        cd /workspace
+        uv sync --frozen
+        exec uv run --frozen uvicorn dspy_lab.api.main:app --host 0.0.0.0 --port 8000
+
+volumes:
+  ollama-data:
